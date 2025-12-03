@@ -8,6 +8,7 @@ import {
   onSnapshot,
   addDoc,
   updateDoc,
+  deleteDoc,
 } from '@angular/fire/firestore';
 
 @Injectable({
@@ -27,8 +28,18 @@ export class NoteListService {
     this.unsubNotes = this.subNotesList();
   }
 
+  async deleteNote(colId: "notes" | "trash", docId: string) {
+    await deleteDoc(this.getSingleNoteRef(colId, docId))
+      .catch((err) => {
+        console.log(err);
+      })
+      .then(() => {
+        console.log('Note deleted successfully');
+      });
+  }
+
   async updateNote(note: Note) {
-    if(note.id){
+    if (note.id) {
       let docRef = this.getSingleNoteRef(this.getColIdFromNote(note), note.id);
       await updateDoc(docRef, this.getCleanJson(note))
         .catch((err) => {
@@ -40,7 +51,7 @@ export class NoteListService {
     }
   }
 
-  getCleanJson(note: Note){
+  getCleanJson(note: Note) {
     return {
       type: note.type,
       title: note.title,
@@ -49,16 +60,17 @@ export class NoteListService {
     };
   }
 
-  getColIdFromNote(note:Note){
-    if(note.type == 'note'){
+  getColIdFromNote(note: Note) {
+    if (note.type == 'note') {
       return 'notes';
-  } else {
-    return 'trash';
-  }
+    } else {
+      return 'trash';
+    }
   }
 
-  async addNote(item: Note) {
-    await addDoc(this.getNotesRef(), item)
+  async addNote(item: Note, colId: "notes" | "trash") {
+    const collectionRef = colId === "notes" ? this.getNotesRef() : this.getTrashRef();
+    await addDoc(collectionRef, this.getCleanJson(item))
       .catch((err) => {
         console.log(err);
       })
